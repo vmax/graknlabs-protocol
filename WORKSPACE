@@ -120,7 +120,7 @@ workspace_refs(
 
 load("@graknlabs_dependencies//builder/nodejs:deps.bzl", nodejs_deps = "deps")
 nodejs_deps(["@graknlabs_dependencies//builder/nodejs:remove-node-patches.patch"])
-load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "npm_install")
+load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "npm_install", "yarn_install")
 
 node_repositories(
     preserve_symlinks = False,
@@ -129,4 +129,11 @@ npm_install(
   name = "npm",
   package_json = "//:package.json",
   package_lock_json = "//:package-lock.json",
+)
+
+yarn_install(
+    name = "rules_typescript_proto_deps",
+    package_json = "//grpc/nodejs:package_deps.json",
+    symlink_node_modules = False,
+    yarn_lock = "//grpc/nodejs:yarn.lock",
 )

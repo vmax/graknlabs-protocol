@@ -21,6 +21,12 @@ load("@build_bazel_rules_nodejs//:index.bzl", "pkg_npm", "nodejs_binary")
 load("@graknlabs_bazel_distribution//npm:rules.bzl", "assemble_npm", "deploy_npm")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 load("//:deployment.bzl", github_deployment = "deployment")
+load("//grpc/nodejs:rules.bzl", "ts_proto_compile")
+
+exports_files([
+    "package_deps.json",
+    "yarn.lock"
+])
 
 
 nodejs_binary(
@@ -71,23 +77,36 @@ genrule(
     #    Output typescript to (you guessed it) the genrule output directory
     #    Set the .proto file relative path to the WORKSPACE this command is being run from
     #    Use the .proto files found in the :proto-raw-buffers filegroup as inputs.
-    cmd = "ln -s $(execpath //grpc/nodejs:protoc-gen-ts).runfiles/npm/node_modules ./node_modules ;\
-        $(execpath //grpc/nodejs:grpc_tools_node_protoc) \
+    cmd = "env && $(execpath //grpc/nodejs:grpc_tools_node_protoc) \
             --plugin='protoc-gen-ts=$(rootpath @npm//:node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts)' \
             --js_out='import_style=commonjs,binary:./$(@D)/' \
             --grpc_out='grpc_js:./$(@D)/' \
             --ts_out='grpc_js:./$(@D)/' \
-            --proto_path=`dirname $(execpath //:WORKSPACE)` \
-            $(execpaths //protobuf:proto-raw-buffers);",
-    # Dependencies for the above command. the //:WORKSPACE label is required to locate the relative path for the .proto files so they can import each other.
+            --proto_path=. \
+            $(locations //protobuf:proto-raw-buffers);",
     tools = [
         "//grpc/nodejs:grpc_tools_node_protoc",
-        "//grpc/nodejs:protoc-gen-ts",
         "@npm//:node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts",
         "@npm//grpc_tools_node_protoc_ts",
         "@npm//google-protobuf",
+    ],
+    srcs = [
         "//protobuf:proto-raw-buffers",
-        "//:WORKSPACE"
+    ]
+)
+
+ts_proto_compile(
+    name = "protocolx",
+    deps = [
+        "//protobuf:answer-proto",
+        "//protobuf:concept-proto",
+        "//protobuf:database-proto",
+        "//protobuf:grakn-proto",
+        "//protobuf:logic-proto",
+        "//protobuf:options-proto",
+        "//protobuf:query-proto",
+        "//protobuf:session-proto",
+        "//protobuf:transaction-proto",
     ],
 )
 
